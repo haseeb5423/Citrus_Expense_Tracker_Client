@@ -1,4 +1,4 @@
-# NexusPay Finance - Client
+# Citrus Expense Tracker - Client
 
 A modern, responsive personal finance management application built with React and TypeScript.
 
