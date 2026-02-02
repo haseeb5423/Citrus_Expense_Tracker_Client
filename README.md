@@ -147,6 +147,3 @@ The application is fully responsive and optimized for:
 - Tablet (768px - 1023px)
 - Mobile (< 768px)
 
-## 📄 License
-
-MIT License - See LICENSE file for details.
