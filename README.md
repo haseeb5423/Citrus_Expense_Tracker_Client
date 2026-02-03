@@ -1,4 +1,4 @@
-# NexusPay Finance - Client
+# Citrus Expense Tracker - Client
 
 A modern, responsive personal finance management application built with React and TypeScript.
 
@@ -54,7 +54,7 @@ client/
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd nexuspay-finance/client
+   cd Citrus-Expense-Tracker/client
    ```
 
 2. **Install dependencies**
@@ -147,6 +147,3 @@ The application is fully responsive and optimized for:
 - Tablet (768px - 1023px)
 - Mobile (< 768px)
 
-## 📄 License
-
-MIT License - See LICENSE file for details.
