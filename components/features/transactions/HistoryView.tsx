@@ -18,6 +18,8 @@ interface Props {
   currencySymbol: string;
 }
 
+const ITEMS_PER_PAGE = 20;
+
 export const HistoryView: React.FC<Props> = ({
   transactions,
   accounts,
@@ -35,6 +37,7 @@ export const HistoryView: React.FC<Props> = ({
   const [deleteMode, setDeleteMode] = useState<'single' | 'bulk' | 'all'>('single');
   const [deleteTargetId, setDeleteTargetId] = useState<string>('');
   const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
 
   // Debounce search input to prevent lag while typing
   const debouncedSearch = useDebounce(searchTerm, 300);
@@ -44,7 +47,7 @@ export const HistoryView: React.FC<Props> = ({
     return ['all', ...Array.from(cats)];
   }, [transactions]);
 
-  const filteredTransactions = useMemo(() => {
+  const allFilteredTransactions = useMemo(() => {
     return transactions
       .filter(t => {
         const matchesSearch = t.description.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
@@ -60,13 +63,17 @@ export const HistoryView: React.FC<Props> = ({
       });
   }, [transactions, debouncedSearch, filterType, selectedCategory, sortOrder]);
 
-  const totalIn = useMemo(() => filteredTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0), [filteredTransactions]);
-  const totalOut = useMemo(() => filteredTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0), [filteredTransactions]);
+  const filteredTransactions = useMemo(() => {
+    return allFilteredTransactions.slice(0, visibleCount);
+  }, [allFilteredTransactions, visibleCount]);
+
+  const totalIn = useMemo(() => allFilteredTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0), [allFilteredTransactions]);
+  const totalOut = useMemo(() => allFilteredTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0), [allFilteredTransactions]);
 
   const handleDownloadCSV = useCallback(() => {
-    if (filteredTransactions.length === 0) return;
+    if (allFilteredTransactions.length === 0) return;
     const headers = ['Date', 'Description', 'Category', 'Account', 'Type', `Amount (${currencySymbol})`].join(",");
-    const rows = filteredTransactions.map(t => {
+    const rows = allFilteredTransactions.map(t => {
       const account = accounts.find(a => a.id === t.accountId);
       return [
         new Date(t.date).toLocaleDateString(),
@@ -87,15 +94,15 @@ export const HistoryView: React.FC<Props> = ({
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  }, [filteredTransactions, accounts, currencySymbol]);
+  }, [allFilteredTransactions, accounts, currencySymbol]);
 
   const toggleSelectAll = useCallback(() => {
-    if (selectedIds.size === filteredTransactions.length) {
+    if (selectedIds.size === allFilteredTransactions.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(filteredTransactions.map(t => t.id)));
+      setSelectedIds(new Set(allFilteredTransactions.map(t => t.id)));
     }
-  }, [selectedIds.size, filteredTransactions]);
+  }, [selectedIds.size, allFilteredTransactions]);
 
   const toggleSelectTransaction = useCallback((id: string) => {
     const newSelected = new Set(selectedIds);
@@ -219,7 +226,7 @@ export const HistoryView: React.FC<Props> = ({
             onClick={handleDownloadCSV}
             title="Download CSV Report"
             className="p-3.5 bg-[var(--action-soft)] text-[var(--action-primary)] rounded-xl hover:bg-[var(--action-primary)] hover:text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={filteredTransactions.length === 0}
+            disabled={allFilteredTransactions.length === 0}
           >
             <Download size={18} />
           </button>
@@ -255,7 +262,7 @@ export const HistoryView: React.FC<Props> = ({
       )}
 
       <div className="glass rounded-[3rem] overflow-hidden border border-white/10">
-        {filteredTransactions.length > 0 && (
+        {allFilteredTransactions.length > 0 && (
           <div className="p-6 border-b border-[var(--border-default)] flex justify-end">
             <button
               onClick={handleDeleteAllClick}
@@ -273,7 +280,7 @@ export const HistoryView: React.FC<Props> = ({
                 <th className="px-8 py-6 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-[0.2em]">
                   <input
                     type="checkbox"
-                    checked={filteredTransactions.length > 0 && selectedIds.size === filteredTransactions.length}
+                    checked={allFilteredTransactions.length > 0 && selectedIds.size === allFilteredTransactions.length}
                     onChange={toggleSelectAll}
                     className="w-4 h-4 rounded border-2 border-[var(--border-default)] bg-[var(--bg-primary)] checked:bg-[var(--action-primary)] checked:border-[var(--action-primary)] cursor-pointer transition-all"
                   />
@@ -359,7 +366,7 @@ export const HistoryView: React.FC<Props> = ({
                   </tr>
                 );
               })}
-              {filteredTransactions.length === 0 && (
+              {allFilteredTransactions.length === 0 && (
                 <tr>
                   <td colSpan={7} className="px-8 py-24 text-center">
                     <div className="flex flex-col items-center opacity-40">
@@ -372,6 +379,18 @@ export const HistoryView: React.FC<Props> = ({
             </tbody>
           </table>
         </div>
+
+        {allFilteredTransactions.length > visibleCount && (
+          <div className="p-8 border-t border-[var(--border-default)] flex justify-center bg-white/5">
+            <button
+              onClick={() => setVisibleCount(prev => prev + ITEMS_PER_PAGE)}
+              className="px-12 py-4 bg-[var(--bg-primary)] hover:bg-[var(--action-soft)] text-[var(--action-primary)] border border-[var(--border-default)] hover:border-[var(--action-primary)] rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all flex items-center gap-3 active:scale-95"
+            >
+              <ChevronDown size={14} />
+              Load More Activities
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Delete Confirmation Modal */}

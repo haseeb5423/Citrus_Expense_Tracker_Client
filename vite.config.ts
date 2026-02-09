@@ -43,13 +43,7 @@ export default defineConfig(({ mode }) => {
         target: 'es2020',
         
         // Enable minification
-        minify: 'terser',
-        terserOptions: {
-          compress: {
-            drop_console: isProduction,
-            drop_debugger: isProduction,
-          },
-        },
+        minify: 'esbuild',
         
         // CSS code splitting
         cssCodeSplit: true,
@@ -64,7 +58,7 @@ export default defineConfig(({ mode }) => {
               // Vendor chunks - split large libraries
               'vendor-charts': ['recharts'],
               'vendor-icons': ['lucide-react'],
-              'vendor-utils': ['axios'],
+              'vendor-utils': ['axios', 'react-window', 'react-virtualized-auto-sizer'],
             },
             // Optimize chunk file names
             chunkFileNames: isProduction 

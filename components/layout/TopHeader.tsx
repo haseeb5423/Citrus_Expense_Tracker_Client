@@ -13,11 +13,11 @@ interface Props {
   onMarkRead: () => void;
 }
 
-export const TopHeader: React.FC<Props> = ({ 
-  activeTab, 
-  onMobileMenuOpen, 
-  onAddClick, 
-  onBack, 
+export const TopHeader: React.FC<Props> = React.memo(({
+  activeTab,
+  onMobileMenuOpen,
+  onAddClick,
+  onBack,
   notifications,
   onMarkRead
 }) => {
@@ -47,7 +47,7 @@ export const TopHeader: React.FC<Props> = ({
     <header className="h-20 glass flex items-center justify-between px-8 z-30 shrink-0 relative">
       <div className="flex items-center gap-2 sm:gap-4">
         {!isDashboard ? (
-          <button 
+          <button
             onClick={onBack}
             className="p-2 hover:bg-[var(--bg-primary)] rounded-xl text-[var(--action-primary)] transition-all flex items-center gap-2 group"
             title="Back to Dashboard"
@@ -56,16 +56,16 @@ export const TopHeader: React.FC<Props> = ({
             <span className="hidden sm:inline text-[10px] font-bold uppercase tracking-widest">Dashboard</span>
           </button>
         ) : (
-          <button 
+          <button
             className="lg:hidden p-2 hover:bg-[var(--bg-primary)] rounded-xl"
             onClick={onMobileMenuOpen}
           >
             <Menu size={20} />
           </button>
         )}
-        
+
         <div className="w-px h-6 bg-[var(--border-default)] mx-1 hidden sm:block" />
-        
+
         <h2 className="text-lg sm:text-xl font-bold tracking-tight capitalize whitespace-nowrap overflow-hidden text-ellipsis">
           {activeTab.replace('-', ' ')}
         </h2>
@@ -73,7 +73,7 @@ export const TopHeader: React.FC<Props> = ({
 
       <div className="flex items-center gap-2 sm:gap-4">
         <div className="relative" ref={popoverRef}>
-          <button 
+          <button
             onClick={handleToggleNotifs}
             className={`p-2 rounded-xl relative group transition-all ${showNotifs ? 'bg-[var(--action-soft)] text-[var(--action-primary)]' : 'hover:bg-[var(--bg-primary)]'}`}
           >
@@ -128,15 +128,15 @@ export const TopHeader: React.FC<Props> = ({
             </div>
           )}
         </div>
-        
-        <button 
+
+        <button
           onClick={onAddClick}
           className="btn-primary px-4 sm:px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2"
         >
-          <Plus size={18} /> 
+          <Plus size={18} />
           <span className="hidden md:inline">Add New</span>
         </button>
       </div>
     </header>
   );
-};
+});

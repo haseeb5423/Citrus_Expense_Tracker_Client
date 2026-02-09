@@ -194,27 +194,6 @@ export const useFinance = () => {
     return { totalBalance, income, expenses };
   }, [accounts, transactions]);
 
-  const getChartData = useCallback((days: number) => {
-    const dayLabels = Array.from({ length: days }, (_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - ((days - 1) - i));
-      return d.toISOString().split('T')[0];
-    });
-
-    return dayLabels.map(date => {
-      const dayTransactions = transactions.filter(t => t.date.startsWith(date));
-      return {
-        name: days <= 7 
-          ? new Date(date).toLocaleDateString('en-US', { weekday: 'short' })
-          : new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        value: dayTransactions.filter(t => t.type === 'expense' && t.category !== 'Transfer').reduce((s, t) => s + t.amount, 0),
-        income: dayTransactions.filter(t => t.type === 'income' && t.category !== 'Transfer').reduce((s, t) => s + t.amount, 0),
-      };
-    });
-  }, [transactions]);
-
-  const weeklyChartData = useMemo(() => getChartData(7), [getChartData]);
-  const monthlyChartData = useMemo(() => getChartData(30), [getChartData]);
 
   // Actions
   const addAccountType = useCallback(async (label: string, theme: AccountType['theme']) => {
@@ -568,8 +547,6 @@ export const useFinance = () => {
     addAccountType,
     deleteAccountType,
     markAllAsRead,
-    weeklyChartData,
-    monthlyChartData,
     transferFunds
   };
 };

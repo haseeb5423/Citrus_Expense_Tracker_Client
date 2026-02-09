@@ -1,17 +1,36 @@
-
-import React from 'react';
+import React, { useMemo } from 'react';
 import { AreaChart, Area, Tooltip, ResponsiveContainer, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { Activity, ArrowUpRight, TrendingUp } from 'lucide-react';
+import { Activity, TrendingUp } from 'lucide-react';
+import { Transaction } from '../../../types';
 
 interface Props {
-  data: any[];
+  transactions: Transaction[];
   view: 'weekly' | 'monthly';
   onViewChange: (view: 'weekly' | 'monthly') => void;
 }
 
-export const MainChart: React.FC<Props> = ({ data, view, onViewChange }) => {
+export const MainChart: React.FC<Props> = ({ transactions, view, onViewChange }) => {
+  const data = useMemo(() => {
+    const days = view === 'weekly' ? 7 : 30;
+    const dayLabels = Array.from({ length: days }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - ((days - 1) - i));
+      return d.toISOString().split('T')[0];
+    });
+
+    return dayLabels.map(date => {
+      const dayTransactions = transactions.filter(t => t.date.startsWith(date));
+      return {
+        name: days <= 7
+          ? new Date(date).toLocaleDateString('en-US', { weekday: 'short' })
+          : new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        value: dayTransactions.filter(t => t.type === 'expense' && t.category !== 'Transfer').reduce((s, t) => s + t.amount, 0),
+        income: dayTransactions.filter(t => t.type === 'income' && t.category !== 'Transfer').reduce((s, t) => s + t.amount, 0),
+      };
+    });
+  }, [transactions, view]);
   return (
-    <div className="lg:col-span-2 glass glass-glow p-8 rounded-[3rem] relative overflow-hidden group">
+    <div className="lg:col-span-2 glass glass-glow p-8 rounded-[3rem] relative overflow-hidden group min-h-[500px] flex flex-col">
       {/* Background Decor */}
       <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--action-primary)] opacity-[0.03] blur-[100px] pointer-events-none"></div>
 
@@ -24,7 +43,7 @@ export const MainChart: React.FC<Props> = ({ data, view, onViewChange }) => {
             <h3 className="text-xl font-bold tracking-tight">Financial Pulse</h3>
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-[var(--text-muted)] font-black uppercase tracking-[0.2em]">Growth Dynamics</span>
-              <span className="w-1 h-1 bg-emerald-500 rounded-full animate-ping"></span>
+              <span className="w-1 h-1 bg-emerald-500 rounded-full"></span>
             </div>
           </div>
         </div>
@@ -51,8 +70,8 @@ export const MainChart: React.FC<Props> = ({ data, view, onViewChange }) => {
         </div>
       </div>
 
-      <div className="h-80 w-full relative z-10 mt-2">
-        <ResponsiveContainer width="100%" height="100%">
+      <div className="flex-1 min-h-[300px] w-full relative z-10 mt-2">
+        <ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
           <AreaChart data={data} margin={{ top: 10, right: 10, left: -25, bottom: 0 }}>
             <defs>
               <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
@@ -95,7 +114,7 @@ export const MainChart: React.FC<Props> = ({ data, view, onViewChange }) => {
               stroke="#f97316"
               strokeWidth={4}
               fill="url(#colorExpense)"
-              animationDuration={2000}
+              animationDuration={500}
               strokeLinecap="round"
               activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2, fill: '#f97316' }}
             />
@@ -107,7 +126,7 @@ export const MainChart: React.FC<Props> = ({ data, view, onViewChange }) => {
               stroke="#10b981"
               strokeWidth={4}
               fill="url(#colorIncome)"
-              animationDuration={2000}
+              animationDuration={500}
               strokeLinecap="round"
               activeDot={{ r: 6, stroke: '#fff', strokeWidth: 2, fill: '#10b981' }}
             />

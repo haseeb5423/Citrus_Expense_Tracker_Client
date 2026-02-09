@@ -6,15 +6,16 @@ import { AccountCard } from './components/features/accounts/AccountCard';
 import { KpiCards } from './components/features/dashboard/KpiCards';
 // import { MainChart } from './components/features/dashboard/MainChart';
 import { RecentHistory } from './components/features/dashboard/RecentHistory';
-import { TransactionModal } from './components/features/modals/TransactionModal';
-import { AddVaultModal } from './components/features/modals/AddVaultModal';
-import { TransferModal } from './components/features/modals/TransferModal';
-import { LogoutConfirmationModal } from './components/features/modals/LogoutConfirmationModal';
+const TransactionModal = lazy(() => import('./components/features/modals/TransactionModal').then(module => ({ default: module.TransactionModal })));
+const AddVaultModal = lazy(() => import('./components/features/modals/AddVaultModal').then(module => ({ default: module.AddVaultModal })));
+const TransferModal = lazy(() => import('./components/features/modals/TransferModal').then(module => ({ default: module.TransferModal })));
+const LogoutConfirmationModal = lazy(() => import('./components/features/modals/LogoutConfirmationModal').then(module => ({ default: module.LogoutConfirmationModal })));
 import { useFinance } from './hooks/useFinance';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { formatCurrency } from './utils/formatters';
 import { Transaction, Account } from './types';
 import { Calendar, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import { ChartSkeleton, KpiCardSkeleton } from './components/ui/Skeleton';
 
 // Lazy load heavy components for code splitting
 const VaultsView = lazy(() => import('./components/features/accounts/VaultsView').then(module => ({ default: module.VaultsView })));
@@ -61,8 +62,6 @@ const FinanceApp: React.FC = () => {
     addAccountType,
     deleteAccountType,
     resetData,
-    weeklyChartData,
-    monthlyChartData,
     markAllAsRead,
     transferFunds
   } = useFinance();
@@ -135,7 +134,6 @@ const FinanceApp: React.FC = () => {
   };
 
   const appFormatCurrency = (val: number) => formatCurrency(val, currency);
-  const currentChartData = chartView === 'weekly' ? weeklyChartData : monthlyChartData;
 
   return (
     <div className="flex h-screen w-full bg-transparent overflow-hidden">
@@ -166,19 +164,20 @@ const FinanceApp: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           {activeTab === 'dashboard' && (
             <div className="max-w-7xl mx-auto space-y-8 fade-in">
-              <KpiCards stats={stats} currencySymbol={currency} />
+              {isLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <KpiCardSkeleton />
+                  <KpiCardSkeleton />
+                  <KpiCardSkeleton />
+                </div>
+              ) : (
+                <KpiCards stats={stats} currencySymbol={currency} />
+              )}
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <Suspense fallback={
-                  <div className="lg:col-span-2 h-80 flex items-center justify-center bg-[var(--bg-primary)]/40 rounded-[3rem] border border-[var(--border-default)]">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="w-8 h-8 border-2 border-[var(--action-primary)] border-t-transparent rounded-full animate-spin"></div>
-                      <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Initializing Metrics...</p>
-                    </div>
-                  </div>
-                }>
+                <Suspense fallback={<ChartSkeleton />}>
                   <MainChart
-                    data={currentChartData}
+                    transactions={transactions}
                     view={chartView}
                     onViewChange={setChartView}
                   />
@@ -303,80 +302,86 @@ const FinanceApp: React.FC = () => {
             </Suspense>
           )}
         </div>
-      </main>
+      </main >
 
-      <TransactionModal
-        isOpen={showAddTransaction || !!editingTransaction}
-        onClose={() => {
-          setShowAddTransaction(false);
-          setEditingTransaction(null);
-        }}
-        accounts={accounts}
-        onSubmit={handleTransactionSubmit}
-        transaction={editingTransaction}
-        currencySymbol={currency}
-      />
+      <Suspense fallback={null}>
+        <TransactionModal
+          isOpen={showAddTransaction || !!editingTransaction}
+          onClose={() => {
+            setShowAddTransaction(false);
+            setEditingTransaction(null);
+          }}
+          accounts={accounts}
+          onSubmit={handleTransactionSubmit}
+          transaction={editingTransaction}
+          currencySymbol={currency}
+        />
 
-      <AddVaultModal
-        isOpen={showAddVault || !!editingAccount}
-        onClose={() => {
-          setShowAddVault(false);
-          setEditingAccount(null);
-        }}
-        onSubmit={handleVaultSubmit}
-        account={editingAccount}
-        accountTypes={accountTypes}
-      />
+        <AddVaultModal
+          isOpen={showAddVault || !!editingAccount}
+          onClose={() => {
+            setShowAddVault(false);
+            setEditingAccount(null);
+          }}
+          onSubmit={handleVaultSubmit}
+          account={editingAccount}
+          accountTypes={accountTypes}
+        />
 
-      <TransferModal
-        isOpen={showTransferModal}
-        onClose={() => setShowTransferModal(false)}
-        accounts={accounts}
-        onSubmit={handleTransferSubmit}
-        currencySymbol={currency}
-      />
+        <TransferModal
+          isOpen={showTransferModal}
+          onClose={() => setShowTransferModal(false)}
+          accounts={accounts}
+          onSubmit={handleTransferSubmit}
+          currencySymbol={currency}
+        />
 
-      <LogoutConfirmationModal
-        isOpen={showLogoutConfirm}
-        onClose={() => setShowLogoutConfirm(false)}
-        onConfirm={() => {
-          logout();
-          setShowLogoutConfirm(false);
-        }}
-        userName={user?.name}
-      />
+        <LogoutConfirmationModal
+          isOpen={showLogoutConfirm}
+          onClose={() => setShowLogoutConfirm(false)}
+          onConfirm={() => {
+            logout();
+            setShowLogoutConfirm(false);
+          }}
+          userName={user?.name}
+        />
+      </Suspense>
 
-      {showAuth && (
-        <div className="fixed inset-0 z-[100] animate-in fade-in duration-300 bg-[var(--bg-primary)]/40 backdrop-blur-md flex items-center justify-center p-6">
-          <Suspense fallback={
-            <div className="glass p-10 rounded-[3rem] border border-white/10 flex flex-col items-center gap-4">
-              <div className="w-12 h-12 border-4 border-[var(--action-primary)] border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Loading Secure Vault...</p>
-            </div>
-          }>
-            <AuthView onBack={() => setShowAuth(false)} />
-          </Suspense>
-        </div>
-      )}
+      {
+        showAuth && (
+          <div className="fixed inset-0 z-[100] animate-in fade-in duration-300 bg-[var(--bg-primary)]/40 backdrop-blur-md flex items-center justify-center p-6">
+            <Suspense fallback={
+              <div className="glass p-10 rounded-[3rem] border border-white/10 flex flex-col items-center gap-4">
+                <div className="w-12 h-12 border-4 border-[var(--action-primary)] border-t-transparent rounded-full animate-spin"></div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Loading Secure Vault...</p>
+              </div>
+            }>
+              <AuthView onBack={() => setShowAuth(false)} />
+            </Suspense>
+          </div>
+        )
+      }
 
       {/* Loading Overlay */}
-      {isLoading && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200]">
-          <div className="glass rounded-3xl border border-white/10 p-8 flex flex-col items-center gap-4 animate-scale-in">
-            <div className="relative w-16 h-16">
-              <div className="absolute inset-0 rounded-2xl bg-[var(--action-primary)] animate-pulse"></div>
-              <div className="absolute inset-2 rounded-xl bg-[var(--bg-primary)] flex items-center justify-center">
-                <div className="w-8 h-8 border-4 border-[var(--action-primary)] border-t-transparent rounded-full animate-spin"></div>
+      {
+        isLoading && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200]">
+            <div className="glass rounded-3xl border border-white/10 p-8 flex flex-col items-center gap-4 animate-scale-in">
+              <div className="relative w-16 h-16">
+                <div className="absolute inset-0 rounded-2xl bg-[var(--action-primary)] animate-pulse"></div>
+                <div className="absolute inset-2 rounded-xl bg-[var(--bg-primary)] flex items-center justify-center">
+                  <div className="w-8 h-8 border-4 border-[var(--action-primary)] border-t-transparent rounded-full animate-spin"></div>
+                </div>
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-bold mb-1">Processing...</p>
+                <p className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-[0.2em]">Please wait</p>
               </div>
             </div>
-            <div className="text-center">
-              <p className="text-sm font-bold mb-1">Processing...</p>
-              <p className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-[0.2em]">Please wait</p>
-            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 
