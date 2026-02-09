@@ -6,7 +6,6 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
 const GUEST_DATA_KEY = 'citrus_guest_data';
-const STALE_TIME = 5 * 60 * 1000; // 5 minutes as requested
 
 const DEFAULT_TYPES: AccountType[] = [
   { id: 'type-1', label: 'Family', theme: 'indigo' },
@@ -26,21 +25,23 @@ export const useFinance = () => {
   
   const prevUserRef = useRef<string | null>(null);
   const isSyncing = useRef(false);
-  const lastFetchedRef = useRef<number>(0);
 
   // Unified Data Loading Logic
   useEffect(() => {
+    // Start loading whenever user state changes or initial load
+    setIsLoading(true);
+
     const loadData = async () => {
       try {
         // 1. User Just Logged In (Transition)
         if (user && prevUserRef.current === null && !isSyncing.current) {
           isSyncing.current = true;
-          setIsLoading(true);
           const guestDataStr = localStorage.getItem(GUEST_DATA_KEY);
           
           if (guestDataStr) {
             try {
               const guestData = JSON.parse(guestDataStr);
+              // SYNC with Backend using axios
               const response = await api.post('/finance/sync', {
                 accounts: guestData.accounts || [],
                 transactions: guestData.transactions || [],
@@ -49,29 +50,19 @@ export const useFinance = () => {
               
               if (response.status === 200) {
                 localStorage.removeItem(GUEST_DATA_KEY);
+                // After sync, fetch fresh data
                 await fetchBackendData();
               }
             } catch (e) {
               console.error("Sync failed", e);
             }
           } else {
-            // Check cache before full fetch for immediate render
-            const cacheKey = `citrus_user_cache_${user.id}`;
-            const cachedData = localStorage.getItem(cacheKey);
-            if (cachedData) {
-              const { accounts, transactions, accountTypes } = JSON.parse(cachedData);
-              setAccounts(accounts || []);
-              setTransactions(transactions || []);
-              setAccountTypes(accountTypes || DEFAULT_TYPES);
-              setIsLoading(false); // Stop blocking
-            }
             await fetchBackendData();
           }
           isSyncing.current = false;
         } 
         // 2. Guest Mode
         else if (!user) {
-          setIsLoading(true);
           const guestData = localStorage.getItem(GUEST_DATA_KEY);
           if (guestData) {
             const loadedData = JSON.parse(guestData);
@@ -81,49 +72,25 @@ export const useFinance = () => {
           } else {
             setAccounts(INITIAL_ACCOUNTS);
           }
-          setIsLoading(false);
         } 
-        // 3. User Already Logged In (or page refresh)
+        // 3. User Already Logged In
         else if (user) {
-          const cacheKey = `citrus_user_cache_${user.id}`;
-          const cachedData = localStorage.getItem(cacheKey);
-          
-          if (cachedData) {
-            const { accounts: cAccs, transactions: cTxs, accountTypes: cTypes, timestamp } = JSON.parse(cachedData);
-            setAccounts(cAccs || []);
-            setTransactions(cTxs || []);
-            setAccountTypes(cTypes || DEFAULT_TYPES);
-            
-            // Check if data is stale
-            const now = Date.now();
-            if (now - (timestamp || 0) < STALE_TIME) {
-              setIsLoading(false);
-              lastFetchedRef.current = timestamp || 0;
-              return; // Data is fresh, skip background fetch
-            }
-            setIsLoading(false); // Show stale data but sync in background
-          } else {
-            setIsLoading(true);
-          }
-
           await fetchBackendData();
-          setIsLoading(false);
         }
   
-        if (!notifications.some(n => n.id === 'welcome')) {
-          setNotifications([{
-            id: 'welcome',
-            title: user ? `Welcome, ${user.name}` : 'Welcome, Guest',
-            message: user ? 'Connected to Citrus Cloud.' : 'Local Mode Active.',
-            time: new Date().toISOString(),
-            isRead: false,
-            type: 'success'
-          }]);
-        }
+        setNotifications([{
+          id: 'welcome',
+          title: user ? `Welcome, ${user.name}` : 'Welcome, Guest',
+          message: user ? 'Connected to Citrus Cloud.' : 'Local Mode Active.',
+          time: new Date().toISOString(),
+          isRead: false,
+          type: 'success'
+        }]);
     
         prevUserRef.current = user?.id || null;
       } catch (error) {
         console.error("Data loading failed", error);
+      } finally {
         setIsLoading(false);
       }
     };
@@ -196,19 +163,6 @@ export const useFinance = () => {
       setAccounts(normalizedAccounts);
       setTransactions(normalizedTransactions);
       setAccountTypes(finalTypes);
-
-      // SWR: Persist to user cache
-      if (user) {
-        const now = Date.now();
-        const cacheKey = `citrus_user_cache_${user.id}`;
-        localStorage.setItem(cacheKey, JSON.stringify({
-          accounts: normalizedAccounts,
-          transactions: normalizedTransactions,
-          accountTypes: finalTypes,
-          timestamp: now
-        }));
-        lastFetchedRef.current = now;
-      }
     } catch (e) {
       console.error("Fetch failed", e);
     }

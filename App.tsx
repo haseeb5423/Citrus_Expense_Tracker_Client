@@ -6,17 +6,15 @@ import { AccountCard } from './components/features/accounts/AccountCard';
 import { KpiCards } from './components/features/dashboard/KpiCards';
 // import { MainChart } from './components/features/dashboard/MainChart';
 import { RecentHistory } from './components/features/dashboard/RecentHistory';
-// Lazy load modals for bundle optimization
-const TransactionModal = lazy(() => import('./components/features/modals/TransactionModal').then(module => ({ default: module.TransactionModal })));
-const AddVaultModal = lazy(() => import('./components/features/modals/AddVaultModal').then(module => ({ default: module.AddVaultModal })));
-const TransferModal = lazy(() => import('./components/features/modals/TransferModal').then(module => ({ default: module.TransferModal })));
-const LogoutConfirmationModal = lazy(() => import('./components/features/modals/LogoutConfirmationModal').then(module => ({ default: module.LogoutConfirmationModal })));
+import { TransactionModal } from './components/features/modals/TransactionModal';
+import { AddVaultModal } from './components/features/modals/AddVaultModal';
+import { TransferModal } from './components/features/modals/TransferModal';
+import { LogoutConfirmationModal } from './components/features/modals/LogoutConfirmationModal';
 import { useFinance } from './hooks/useFinance';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { formatCurrency } from './utils/formatters';
 import { Transaction, Account } from './types';
 import { Calendar, ChevronRight as ChevronRightIcon } from 'lucide-react';
-import { DashboardSkeleton } from './components/ui/Skeleton';
 
 // Lazy load heavy components for code splitting
 const VaultsView = lazy(() => import('./components/features/accounts/VaultsView').then(module => ({ default: module.VaultsView })));
@@ -168,62 +166,57 @@ const FinanceApp: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
           {activeTab === 'dashboard' && (
             <div className="max-w-7xl mx-auto space-y-8 fade-in">
-              {isLoading && accounts.length === 0 ? (
-                <DashboardSkeleton />
-              ) : (
-                <>
-                  <KpiCards stats={stats} currencySymbol={currency} />
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    <Suspense fallback={
-                      <div className="lg:col-span-2 h-80 flex items-center justify-center bg-[var(--bg-primary)]/40 rounded-[3rem] border border-[var(--border-default)]">
-                        <div className="flex flex-col items-center gap-3">
-                          <div className="w-8 h-8 border-2 border-[var(--action-primary)] border-t-transparent rounded-full animate-spin"></div>
-                          <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Initializing Metrics...</p>
-                        </div>
-                      </div>
-                    }>
-                      <MainChart
-                        data={currentChartData}
-                        view={chartView}
-                        onViewChange={setChartView}
-                      />
-                    </Suspense>
+              <KpiCards stats={stats} currencySymbol={currency} />
 
-                    <div className="flex flex-col gap-6 lg:h-full">
-                      <div className="flex justify-between items-center px-1">
-                        <h3 className="text-lg font-bold tracking-tight">Active Wallets</h3>
-                        <button
-                          className="text-[var(--action-primary)] font-semibold text-xs flex items-center gap-1 hover:gap-2 transition-all"
-                          onClick={() => setActiveTab('accounts')}
-                        >
-                          Manage <ChevronRightIcon size={14} />
-                        </button>
-                      </div>
-
-                      <div className="relative">
-                        <div className="flex lg:flex-col gap-8 overflow-x-auto lg:overflow-y-auto lg:max-h-[600px] py-6 lg:py-2 snap-x snap-mandatory no-scrollbar lg:custom-scrollbar -mx-4 px-4 lg:mx-0 lg:px-2">
-                          {accounts.map(acc => (
-                            <div key={acc.id} className="snap-center shrink-0">
-                              <AccountCard
-                                account={acc}
-                                formatCurrency={appFormatCurrency}
-                                onEdit={(e) => { e.stopPropagation(); setEditingAccount(acc); }}
-                                onDelete={(e) => { e.stopPropagation(); deleteAccount(acc.id); }}
-                              />
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <Suspense fallback={
+                  <div className="lg:col-span-2 h-80 flex items-center justify-center bg-[var(--bg-primary)]/40 rounded-[3rem] border border-[var(--border-default)]">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-2 border-[var(--action-primary)] border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-[9px] font-bold uppercase tracking-widest text-[var(--text-muted)]">Initializing Metrics...</p>
                     </div>
                   </div>
-
-                  <RecentHistory
-                    transactions={transactions}
-                    onSeeAll={() => setActiveTab('transactions')}
-                    currencySymbol={currency}
+                }>
+                  <MainChart
+                    data={currentChartData}
+                    view={chartView}
+                    onViewChange={setChartView}
                   />
-                </>
-              )}
+                </Suspense>
+
+                <div className="flex flex-col gap-6 lg:h-full">
+                  <div className="flex justify-between items-center px-1">
+                    <h3 className="text-lg font-bold tracking-tight">Active Wallets</h3>
+                    <button
+                      className="text-[var(--action-primary)] font-semibold text-xs flex items-center gap-1 hover:gap-2 transition-all"
+                      onClick={() => setActiveTab('accounts')}
+                    >
+                      Manage <ChevronRightIcon size={14} />
+                    </button>
+                  </div>
+
+                  <div className="relative">
+                    <div className="flex lg:flex-col gap-8 overflow-x-auto lg:overflow-y-auto lg:max-h-[600px] py-6 lg:py-2 snap-x snap-mandatory no-scrollbar lg:custom-scrollbar -mx-4 px-4 lg:mx-0 lg:px-2">
+                      {accounts.map(acc => (
+                        <div key={acc.id} className="snap-center shrink-0">
+                          <AccountCard
+                            account={acc}
+                            formatCurrency={appFormatCurrency}
+                            onEdit={(e) => { e.stopPropagation(); setEditingAccount(acc); }}
+                            onDelete={(e) => { e.stopPropagation(); deleteAccount(acc.id); }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <RecentHistory
+                transactions={transactions}
+                onSeeAll={() => setActiveTab('transactions')}
+                currencySymbol={currency}
+              />
             </div>
           )}
 
@@ -312,48 +305,46 @@ const FinanceApp: React.FC = () => {
         </div>
       </main>
 
-      <Suspense fallback={null}>
-        <TransactionModal
-          isOpen={showAddTransaction || !!editingTransaction}
-          onClose={() => {
-            setShowAddTransaction(false);
-            setEditingTransaction(null);
-          }}
-          accounts={accounts}
-          onSubmit={handleTransactionSubmit}
-          transaction={editingTransaction}
-          currencySymbol={currency}
-        />
+      <TransactionModal
+        isOpen={showAddTransaction || !!editingTransaction}
+        onClose={() => {
+          setShowAddTransaction(false);
+          setEditingTransaction(null);
+        }}
+        accounts={accounts}
+        onSubmit={handleTransactionSubmit}
+        transaction={editingTransaction}
+        currencySymbol={currency}
+      />
 
-        <AddVaultModal
-          isOpen={showAddVault || !!editingAccount}
-          onClose={() => {
-            setShowAddVault(false);
-            setEditingAccount(null);
-          }}
-          onSubmit={handleVaultSubmit}
-          account={editingAccount}
-          accountTypes={accountTypes}
-        />
+      <AddVaultModal
+        isOpen={showAddVault || !!editingAccount}
+        onClose={() => {
+          setShowAddVault(false);
+          setEditingAccount(null);
+        }}
+        onSubmit={handleVaultSubmit}
+        account={editingAccount}
+        accountTypes={accountTypes}
+      />
 
-        <TransferModal
-          isOpen={showTransferModal}
-          onClose={() => setShowTransferModal(false)}
-          accounts={accounts}
-          onSubmit={handleTransferSubmit}
-          currencySymbol={currency}
-        />
+      <TransferModal
+        isOpen={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
+        accounts={accounts}
+        onSubmit={handleTransferSubmit}
+        currencySymbol={currency}
+      />
 
-        <LogoutConfirmationModal
-          isOpen={showLogoutConfirm}
-          onClose={() => setShowLogoutConfirm(false)}
-          onConfirm={() => {
-            logout();
-            setShowLogoutConfirm(false);
-          }}
-          userName={user?.name}
-        />
-      </Suspense>
+      <LogoutConfirmationModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={() => {
+          logout();
+          setShowLogoutConfirm(false);
+        }}
+        userName={user?.name}
+      />
 
       {showAuth && (
         <div className="fixed inset-0 z-[100] animate-in fade-in duration-300 bg-[var(--bg-primary)]/40 backdrop-blur-md flex items-center justify-center p-6">
@@ -368,12 +359,20 @@ const FinanceApp: React.FC = () => {
         </div>
       )}
 
-      {/* Sync Overlay - Shown only if re-validating but we already have some data */}
-      {isLoading && accounts.length > 0 && (
-        <div className="fixed bottom-8 right-8 z-[100] animate-in slide-in-from-bottom-10 fade-in duration-500">
-          <div className="glass px-6 py-3 rounded-2xl border border-white/10 flex items-center gap-3 shadow-2xl">
-            <div className="w-2 h-2 rounded-full bg-[var(--action-primary)] animate-ping"></div>
-            <span className="text-[10px] font-black uppercase tracking-widest text-[var(--text-muted)]">Cloud Syncing...</span>
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[200]">
+          <div className="glass rounded-3xl border border-white/10 p-8 flex flex-col items-center gap-4 animate-scale-in">
+            <div className="relative w-16 h-16">
+              <div className="absolute inset-0 rounded-2xl bg-[var(--action-primary)] animate-pulse"></div>
+              <div className="absolute inset-2 rounded-xl bg-[var(--bg-primary)] flex items-center justify-center">
+                <div className="w-8 h-8 border-4 border-[var(--action-primary)] border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-sm font-bold mb-1">Processing...</p>
+              <p className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-[0.2em]">Please wait</p>
+            </div>
           </div>
         </div>
       )}
