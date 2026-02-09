@@ -14,10 +14,9 @@ interface Props {
 
 export const TransferModal: React.FC<Props> = ({ isOpen, onClose, accounts, onSubmit, currencySymbol }) => {
     const [date, setDate] = useState(new Date().toISOString());
+    const [error, setError] = useState<string | null>(null);
 
     if (!isOpen) return null;
-
-    const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
