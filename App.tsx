@@ -346,7 +346,7 @@ const FinanceApp: React.FC = () => {
 
         <LogoutConfirmationModal
           isOpen={showLogoutConfirm}
-          onClose={() => setShowLogoutConfirm(true)} // Fix: was incorrect, should probably be setShowLogoutConfirm(false)
+          onClose={() => setShowLogoutConfirm(false)}
           onConfirm={() => {
             logout();
             setShowLogoutConfirm(false);
