@@ -1,0 +1,11 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="citrus_grad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#ea580c"/>
+      <stop offset="1" stop-color="#f97316"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="url(#citrus_grad)"/>
+  <path d="M256 120C180.891 120 120 180.891 120 256C120 331.109 180.891 392 256 392C331.109 392 392 331.109 392 256C392 180.891 331.109 120 256 120ZM256 364C196.353 364 148 315.647 148 256C148 196.353 196.353 148 256 148C315.647 148 364 196.353 364 256C364 315.647 315.647 364 256 364Z" fill="white" fill-opacity="0.9"/>
+  <path d="M256 176V256M256 256L312 200M256 256L200 200M256 256H336M256 256H176M256 256L312 312M256 256L200 312M256 256V336" stroke="white" stroke-width="24" stroke-linecap="round"/>
+</svg>

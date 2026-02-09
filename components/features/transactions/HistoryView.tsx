@@ -1,10 +1,10 @@
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Transaction, Account } from '../../../types';
 import { formatDate, formatCurrency } from '../../../utils/formatters';
 import {
   Search, Filter, ArrowUpRight, ArrowDownLeft,
-  Download, Calendar, Tag, Wallet, ChevronDown, Trash2, Edit2, X, AlertTriangle
+  Download, Calendar, Tag, Wallet, ChevronDown, ChevronLeft, ChevronRight, Trash2, Edit2, X, AlertTriangle
 } from 'lucide-react';
 import { useDebounce } from '../../../hooks/useDebounce';
 
@@ -37,7 +37,7 @@ export const HistoryView: React.FC<Props> = ({
   const [deleteMode, setDeleteMode] = useState<'single' | 'bulk' | 'all'>('single');
   const [deleteTargetId, setDeleteTargetId] = useState<string>('');
   const [sortOrder, setSortOrder] = useState<'latest' | 'oldest'>('latest');
-  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Debounce search input to prevent lag while typing
   const debouncedSearch = useDebounce(searchTerm, 300);
@@ -63,9 +63,17 @@ export const HistoryView: React.FC<Props> = ({
       });
   }, [transactions, debouncedSearch, filterType, selectedCategory, sortOrder]);
 
+  const totalPages = Math.max(1, Math.ceil(allFilteredTransactions.length / ITEMS_PER_PAGE));
+
   const filteredTransactions = useMemo(() => {
-    return allFilteredTransactions.slice(0, visibleCount);
-  }, [allFilteredTransactions, visibleCount]);
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return allFilteredTransactions.slice(start, start + ITEMS_PER_PAGE);
+  }, [allFilteredTransactions, currentPage]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedSearch, filterType, selectedCategory, sortOrder]);
 
   const totalIn = useMemo(() => allFilteredTransactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0), [allFilteredTransactions]);
   const totalOut = useMemo(() => allFilteredTransactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0), [allFilteredTransactions]);
@@ -380,15 +388,57 @@ export const HistoryView: React.FC<Props> = ({
           </table>
         </div>
 
-        {allFilteredTransactions.length > visibleCount && (
-          <div className="p-8 border-t border-[var(--border-default)] flex justify-center bg-white/5">
-            <button
-              onClick={() => setVisibleCount(prev => prev + ITEMS_PER_PAGE)}
-              className="px-12 py-4 bg-[var(--bg-primary)] hover:bg-[var(--action-soft)] text-[var(--action-primary)] border border-[var(--border-default)] hover:border-[var(--action-primary)] rounded-2xl text-[10px] font-bold uppercase tracking-[0.2em] transition-all flex items-center gap-3 active:scale-95"
-            >
-              <ChevronDown size={14} />
-              Load More Activities
-            </button>
+        {allFilteredTransactions.length > 0 && (
+          <div className="p-8 border-t border-[var(--border-default)] flex flex-col sm:flex-row items-center justify-between gap-6 bg-white/5">
+            <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest order-2 sm:order-1">
+              Showing <span className="text-[var(--text-primary)]">{(currentPage - 1) * ITEMS_PER_PAGE + 1}</span> to <span className="text-[var(--text-primary)]">{Math.min(currentPage * ITEMS_PER_PAGE, allFilteredTransactions.length)}</span> of <span className="text-[var(--text-primary)]">{allFilteredTransactions.length}</span> results
+            </div>
+
+            <div className="flex items-center gap-2 order-1 sm:order-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2.5 bg-[var(--bg-primary)] border border-[var(--border-default)] rounded-xl text-[var(--text-muted)] hover:text-[var(--action-primary)] hover:border-[var(--action-primary)] disabled:opacity-30 disabled:hover:text-[var(--text-muted)] disabled:hover:border-[var(--border-default)] transition-all active:scale-95"
+              >
+                <ChevronLeft size={16} />
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-10 h-10 rounded-xl text-xs font-bold transition-all active:scale-95 ${currentPage === pageNum
+                        ? 'bg-[var(--action-primary)] text-white shadow-lg shadow-[var(--action-primary)]/25'
+                        : 'bg-[var(--bg-primary)] border border-[var(--border-default)] text-[var(--text-muted)] hover:border-[var(--action-primary)] hover:text-[var(--action-primary)]'
+                        }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2.5 bg-[var(--bg-primary)] border border-[var(--border-default)] rounded-xl text-[var(--text-muted)] hover:text-[var(--action-primary)] hover:border-[var(--action-primary)] disabled:opacity-30 disabled:hover:text-[var(--text-muted)] disabled:hover:border-[var(--border-default)] transition-all active:scale-95"
+              >
+                <ChevronRight size={16} />
+              </button>
+            </div>
           </div>
         )}
       </div>
